@@ -44,6 +44,8 @@ systemctl start mysqld &>>$LOG_FILE
 VALIDATE $? "Started MySQL server"
 
 mysql -h mysql.daws81s.online -u root -pExpenseApp@1 -e 'show databases;' &>>$LOG_FILE
+#why this is , if we run this "mysql_secure_installation --set-root-pass ExpenseApp@1" and if user already exists 
+#then command fails. so we use above command , it only fails if user is not there; --IDEMPOTENCYY
 if [ $? -ne 0 ]
 then
     echo "MySQL root password is not setup, setting now" &>>$LOG_FILE

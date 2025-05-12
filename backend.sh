@@ -44,6 +44,12 @@ dnf install nodejs -y &>>$LOG_FILE
 VALIDATE $? "Install nodejs"
 
 id expense &>>$LOG_FILE
+# This command checks if the expense user exists; if not throws an error; 
+# if its error then $? is not equal to 0; we use this for idempotency; 
+# if the user exists then we skip the user creation
+# if you dont do this then everytime you run the script it will create a new user; OUR SCRIPT FAILS FROM SECOND
+# RUN ONWARDS
+
 if [ $? -ne 0 ]
 then
     echo -e "expense user not exists... $G Creating $N"
@@ -60,14 +66,16 @@ curl -o /tmp/backend.zip https://expense-builds.s3.us-east-1.amazonaws.com/expen
 VALIDATE $? "Downloading backend application code"
 
 cd /app
-rm -rf /app/* # remove the existing code
+rm -rf /app/* # remove the existing code ; if not same files will be added and throws error; 
 unzip /tmp/backend.zip &>>$LOG_FILE
 VALIDATE $? "Extracting backend application code"
 
 npm install &>>$LOG_FILE
 cp /home/ec2-user/expense-shell/backend.service /etc/systemd/system/backend.service
 
-# load the data before running backend
+# load the data before running backend.service
+# this is because backend.service will run the application and it will try to connect to mysql
+# if mysql is not installed then it will fail; so we need to install mysql before running the backend.service.
 
 dnf install mysql -y &>>$LOG_FILE
 VALIDATE $? "Installing MySQL Client"
@@ -81,6 +89,6 @@ VALIDATE $? "Daemon reload"
 systemctl enable backend &>>$LOG_FILE
 VALIDATE $? "Enabled backend"
 
-systemctl restart backend &>>$LOG_FILE
+systemctl restart backend &>>$LOG_FILE #start cannot be used second time;
 VALIDATE $? "Restarted Backend"
 
